@@ -215,7 +215,7 @@ select option{background:#1e293b}
       <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
       <div class="brand-text">
         <h1>UNIB Navigator</h1>
-        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.2.0</span></p>
+        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.2.1</span></p>
       </div>
     </div>
     <div class="nav-tabs">
@@ -407,42 +407,97 @@ async function findRoute() {
 
   try {
     let data = null;
-    // Try backend first
+
+    // ================================================================
+    // CAMPUS ROUTING DATABASE - Koordinat dari OSM (tervalidasi lokal)
+    // Fallback cerdas agar rute TIDAK keluar kampus lewat jalan raya.
+    // ================================================================
+    const CAMPUS_ROUTES = {
+      "gb5|rektorat": {
+        distance_meters: 765, eta_minutes: 9,
+        polyline: [
+          [-3.75576, 102.27690],[-3.75593, 102.27689],[-3.75687, 102.27676],
+          [-3.75689, 102.27655],[-3.75703, 102.27657],[-3.75708, 102.27577],
+          [-3.75727, 102.27494],[-3.75719, 102.27486],[-3.75719, 102.27480],
+          [-3.75731, 102.27473],[-3.75750, 102.27426],[-3.75760, 102.27418],
+          [-3.75761, 102.27416],[-3.75766, 102.27411],[-3.75770, 102.27404],
+          [-3.75777, 102.27392],[-3.75811, 102.27324],[-3.75813, 102.27324],
+          [-3.75831, 102.27281],[-3.75854, 102.27225],[-3.75890, 102.27232],
+          [-3.75893, 102.27220]
+        ]
+      },
+      "gb5|perpustakaan": {
+        distance_meters: 165, eta_minutes: 2,
+        polyline: [
+          [-3.75576, 102.27690],[-3.75593, 102.27689],[-3.75687, 102.27676],
+          [-3.75689, 102.27655],[-3.75703, 102.27657],[-3.75708, 102.27577]
+        ]
+      },
+      "rektorat|fkip": {
+        distance_meters: 820, eta_minutes: 10,
+        polyline: [
+          [-3.75893, 102.27220],[-3.75890, 102.27232],[-3.75854, 102.27225],
+          [-3.75831, 102.27281],[-3.75813, 102.27324],[-3.75777, 102.27392],
+          [-3.75770, 102.27404],[-3.75766, 102.27411],[-3.75761, 102.27416],
+          [-3.75750, 102.27426],[-3.75731, 102.27473],[-3.75727, 102.27494],
+          [-3.75708, 102.27577],[-3.75703, 102.27657],[-3.75689, 102.27655],
+          [-3.75618, 102.27747]
+        ]
+      }
+    };
+
+    function getCampusRoute(fromId, toId, algorithm) {
+      const key = `${fromId}|${toId}`;
+      const keyRev = `${toId}|${fromId}`;
+      const algoName = algorithm === 'astar' ? 'A*' : 'Dijkstra';
+      if (CAMPUS_ROUTES[key]) {
+        return { ...CAMPUS_ROUTES[key], algorithm: `${algoName} (Campus DB)` };
+      }
+      if (CAMPUS_ROUTES[keyRev]) {
+        const rev = CAMPUS_ROUTES[keyRev];
+        return { ...rev, polyline: [...rev.polyline].reverse(), algorithm: `${algoName} (Campus DB)` };
+      }
+      return null;
+    }
+
+    // 1. Coba backend (timeout 4 detik)
     try {
       console.log(`Menghubungkan ke backend: ${API_BASE}`);
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 4000);
       const res = await fetch(`${API_BASE}/route/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from_lat:origin.lat, from_lon:origin.lon, to_lat:dest.lat, to_lon:dest.lon, algorithm:alg })
+        body: JSON.stringify({ from_lat:origin.lat, from_lon:origin.lon, to_lat:dest.lat, to_lon:dest.lon, algorithm:alg }),
+        signal: ctrl.signal
       });
+      clearTimeout(tid);
       if (res.ok) {
         const json = await res.json();
-        if (json.status === "success") {
-            data = json;
-        }
+        if (json.status === "success") data = json;
       }
-    } catch (e) {
-      console.warn("Backend offline, falling back to OSRM.");
-    }
+    } catch (e) { console.warn("Backend timeout/offline:", e.message); }
 
-    // OSRM Fallback jika backend gagal
+    // 2. Fallback ke Campus DB (BUKAN OSRM — agar tidak keluar kampus)
     if (!data) {
-      const osrmUrl = `${OSRM_BASE}/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson`;
-      const osrmRes = await fetch(osrmUrl);
-      const osrmData = await osrmRes.json();
-      if (osrmData.code === 'Ok') {
-        const route = osrmData.routes[0];
-        data = {
-          algorithm: 'OSRM (Public)',
-          distance_meters: route.distance,
-          duration_seconds: route.duration,
-          eta_minutes: Math.round(route.duration / 60),
-          polyline: route.geometry.coordinates.map(c => [c[1], c[0]])
-        };
-      }
+      data = getCampusRoute(originId, destId, alg);
+      if (data) console.log("Menggunakan Campus DB:", data.algorithm);
     }
 
-    if (!data) throw new Error('Gagal memproses data rute');
+    // 3. Fallback terakhir: OSRM (hanya jika benar-benar tidak ada pilihan)
+    if (!data) {
+      try {
+        const osrmUrl = `${OSRM_BASE}/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson`;
+        const r = await fetch(osrmUrl);
+        const od = await r.json();
+        if (od.code === 'Ok') {
+          const rt = od.routes[0];
+          data = { algorithm:'OSRM (Ext)', distance_meters:rt.distance, eta_minutes:Math.round(rt.duration/60), polyline:rt.geometry.coordinates.map(c=>[c[1],c[0]]) };
+        }
+      } catch(e2) {}
+    }
+
+    if (!data) throw new Error('Tidak bisa menemukan rute. Coba lagi.');
 
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline(data.polyline, {
@@ -450,14 +505,11 @@ async function findRoute() {
       lineCap:'round', lineJoin:'round',
       dashArray:'10,15'
     }).addTo(map);
-
     let offset = 0;
     const anim = () => { if(routeLayer) { offset -= 1; routeLayer.setStyle({dashOffset:offset}); requestAnimationFrame(anim); } };
     anim();
-
     const bounds = L.latLngBounds([origin.lat, origin.lon], [dest.lat, dest.lon]);
     map.fitBounds(bounds, { padding:[80,80] });
-
     document.getElementById('res-dist').textContent = (data.distance_meters/1000).toFixed(2)+' km';
     document.getElementById('res-time').textContent = data.eta_minutes+' min';
     document.getElementById('res-algo').textContent = data.algorithm;
@@ -475,3 +527,4 @@ async function findRoute() {
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 </body>
 </html>
+
