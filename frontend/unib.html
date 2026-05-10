@@ -215,7 +215,7 @@ select option{background:#1e293b}
       <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
       <div class="brand-text">
         <h1>UNIB Navigator</h1>
-        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.1.1</span></p>
+        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.2.0</span></p>
       </div>
     </div>
     <div class="nav-tabs">
@@ -440,34 +440,6 @@ async function findRoute() {
           polyline: route.geometry.coordinates.map(c => [c[1], c[0]])
         };
       }
-    }
-
-    // LOGIC OVERRIDE: Jalur tikus manual (GB 5 ↔ Rektorat)
-    const isGB5ToRektorat = (originId === 'gb5' && destId === 'rektorat');
-    const isRektoratToGB5 = (originId === 'rektorat' && destId === 'gb5');
-    
-    if (isGB5ToRektorat || isRektoratToGB5) {
-        // Koordinat yang disejajarkan persis secara visual dengan aspal di peta Leaflet (OSM tiles)
-        const manualPath = [
-            [-3.75550, 102.27640], // GB 5
-            [-3.75580, 102.27630], // Simpang parkir GB 5
-            [-3.75570, 102.27420], // Lurus terus ke barat, lewat utara PKM & Perpus, sampai simpang Lab Fisika
-            [-3.75650, 102.27410], // Belok kiri (selatan) lewat barat Perpus
-            [-3.75700, 102.27390], // Lurus ke selatan lewat timur Pascasarjana Pertanian
-            [-3.75750, 102.27360], // Sampai simpang utara Mushola
-            [-3.75770, 102.27330], // Belok kanan (barat) arah jembatan
-            [-3.75780, 102.27250], // Lewat jembatan antar danau
-            [-3.75800, 102.27180], // Jalan terus ke barat di utara parkiran Rektorat
-            [-3.75830, 102.27140], // Tikungan jauh di barat
-            [-3.75860, 102.27170], // Masuk area Rektorat dari barat
-            [-3.75890, 102.27220]  // Gedung Rektorat
-        ];
-        data = {
-            algorithm: 'Dijkstra (Custom User Path)',
-            distance_meters: 850,
-            eta_minutes: 4,
-            polyline: isRektoratToGB5 ? [...manualPath].reverse() : manualPath
-        };
     }
 
     if (!data) throw new Error('Gagal memproses data rute');
