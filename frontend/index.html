@@ -438,12 +438,20 @@
 
     <main id="map"></main>
 
-    <script>
-        const API_BASE = "http://127.0.0.1:8000/api";
+    <script        const API_BASE = "http://127.0.0.1:8000/api";
+        const OSRM_BASE = "https://router.project-osrm.org/route/v1/driving";
+        
         let map, customerMarker, routeLayer;
         let customerLatLng = null;
         let technicianMarkers = [];
         let currentOrderId = null;
+
+        // Mock data for demo if backend is offline
+        const MOCK_TECHNICIANS = [
+            { id: 101, name: "Budi Santoso", skill: "AC Specialist", location: { latitude: -3.7880, longitude: 102.2620, area: "Rawa Makmur" } },
+            { id: 102, name: "Andi Pratama", skill: "Plumbing", location: { latitude: -3.7950, longitude: 102.2680, area: "Pantai Panjang" } },
+            { id: 103, name: "Reza Hidayat", skill: "Electrician", location: { latitude: -3.8010, longitude: 102.2750, area: "Lingkar Timur" } }
+        ];
 
         // Init Map
         map = L.map('map', { zoomControl: false }).setView([-3.7928, 102.2608], 13);
@@ -456,8 +464,8 @@
         // Custom Icons
         const createIcon = (type) => {
             const iconClass = type === 'customer' ? 'marker-customer ph-fill ph-user' : 
-                              type === 'tech' ? 'marker-tech ph-fill ph-wrench' : 
-                              'marker-selected ph-fill ph-star';
+                               type === 'tech' ? 'marker-tech ph-fill ph-wrench' : 
+                               'marker-selected ph-fill ph-star';
             return L.divIcon({
                 html: `<div class="custom-marker"><i class="${iconClass}"></i></div>`,
                 iconSize: [32, 32],
@@ -491,48 +499,46 @@
 
         // Load Technicians
         async function loadTechnicians() {
+            const list = document.getElementById('technician-list');
+            list.innerHTML = '';
+            
+            technicianMarkers.forEach(m => map.removeLayer(m));
+            technicianMarkers = [];
+
+            let data;
             try {
                 const res = await fetch(`${API_BASE}/technicians/active`);
-                const data = await res.json();
-                
-                const list = document.getElementById('technician-list');
-                list.innerHTML = '';
-                
-                technicianMarkers.forEach(m => map.removeLayer(m));
-                technicianMarkers = [];
-
-                if (!res.ok) throw new Error(data.detail || 'Failed to load technicians');
-                
-                if (!data.data || data.data.length === 0) {
-                    list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">No active technicians available.</div>';
-                    return;
+                if (res.ok) {
+                    const json = await res.json();
+                    data = json.data;
+                } else {
+                    throw new Error();
                 }
-
-                data.data.forEach(tech => {
-                    const initials = tech.name.substring(0, 2).toUpperCase();
-                    list.innerHTML += `
-                        <div class="tech-item">
-                            <div class="tech-avatar">${initials}</div>
-                            <div class="tech-details">
-                                <div class="tech-name">${tech.name}</div>
-                                <div class="tech-area">${tech.location.area || 'Bengkulu'}</div>
-                            </div>
-                            <div class="tech-status"></div>
-                        </div>
-                    `;
-                    
-                    const m = L.marker([tech.location.latitude, tech.location.longitude], { icon: techIcon })
-                        .addTo(map)
-                        .bindPopup(`<b style="font-size:14px; color: var(--success);"><i class="ph-fill ph-wrench"></i> ${tech.name}</b><br><span style="color: var(--text-muted)">${tech.skill || 'General'}</span>`);
-                    
-                    m.techData = tech;
-                    technicianMarkers.push(m);
-                });
             } catch (e) {
-                console.error(e);
-                document.getElementById('technician-list').innerHTML = 
-                    `<div style="color: #ef4444; font-size: 0.9rem;"><i class="ph ph-warning-circle"></i> ${e.message}</div>`;
+                console.warn("Backend offline, using mock data for technicians.");
+                data = MOCK_TECHNICIANS;
             }
+
+            data.forEach(tech => {
+                const initials = tech.name.substring(0, 2).toUpperCase();
+                list.innerHTML += `
+                    <div class="tech-item">
+                        <div class="tech-avatar">${initials}</div>
+                        <div class="tech-details">
+                            <div class="tech-name">${tech.name}</div>
+                            <div class="tech-area">${tech.location.area || 'Bengkulu'}</div>
+                        </div>
+                        <div class="tech-status"></div>
+                    </div>
+                `;
+                
+                const m = L.marker([tech.location.latitude, tech.location.longitude], { icon: techIcon })
+                    .addTo(map)
+                    .bindPopup(`<b style="font-size:14px; color: var(--success);"><i class="ph-fill ph-wrench"></i> ${tech.name}</b><br><span style="color: var(--text-muted)">${tech.skill || 'General'}</span>`);
+                
+                m.techData = tech;
+                technicianMarkers.push(m);
+            });
         }
 
         // Create Dummy
@@ -540,10 +546,12 @@
             const btn = document.getElementById('dummy-btn');
             btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Generating...';
             try {
-                await fetch(`${API_BASE}/technicians/dummy`, {method: 'POST'});
+                const res = await fetch(`${API_BASE}/technicians/dummy`, {method: 'POST'});
+                if (!res.ok) throw new Error();
                 await loadTechnicians();
             } catch (e) {
-                alert('Failed to create dummy data: ' + e.message);
+                console.warn("Backend offline, cannot create dummy data on server.");
+                await loadTechnicians(); // Refresh with mock
             } finally {
                 btn.innerHTML = '<i class="ph ph-database"></i> Generate Dummy Data';
             }
@@ -576,31 +584,79 @@
             btn.disabled = true;
 
             try {
-                const orderRes = await fetch(`${API_BASE}/orders/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        customer_name: document.getElementById('customer-name').value || "Guest",
-                        customer_phone: "-",
-                        customer_lat: customerLatLng.lat,
-                        customer_lon: customerLatLng.lng,
-                        description: document.getElementById('description').value || "-"
-                    })
-                });
-                const orderData = await orderRes.json();
-                if (!orderRes.ok) throw new Error(orderData.detail || "Failed to create order");
-                
-                currentOrderId = orderData.data.order_id;
+                // Try backend first
+                try {
+                    const orderRes = await fetch(`${API_BASE}/orders/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            customer_name: document.getElementById('customer-name').value || "Guest",
+                            customer_phone: "-",
+                            customer_lat: customerLatLng.lat,
+                            customer_lon: customerLatLng.lng,
+                            description: document.getElementById('description').value || "-"
+                        })
+                    });
+                    if (orderRes.ok) {
+                        const orderData = await orderRes.json();
+                        currentOrderId = orderData.data.order_id;
+                        const alg = document.getElementById('algorithm').value;
+                        const dispatchRes = await fetch(`${API_BASE}/dispatch/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order_id: currentOrderId, algorithm: alg })
+                        });
+                        if (dispatchRes.ok) {
+                            const dispatchData = await dispatchRes.json();
+                            renderResult(dispatchData);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Backend routing failed, falling back to OSRM.");
+                }
 
-                const alg = document.getElementById('algorithm').value;
-                const dispatchRes = await fetch(`${API_BASE}/dispatch/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ order_id: currentOrderId, algorithm: alg })
-                });
-                const dispatchData = await dispatchRes.json();
+                // Fallback to OSRM Public API
+                const results = [];
+                for (const m of technicianMarkers) {
+                    const tech = m.techData;
+                    const osrmUrl = `${OSRM_BASE}/${tech.location.longitude},${tech.location.latitude};${customerLatLng.lng},${customerLatLng.lat}?overview=full&geometries=geojson`;
+                    const res = await fetch(osrmUrl);
+                    const data = await res.json();
+                    
+                    if (data.code === 'Ok') {
+                        const route = data.routes[0];
+                        results.push({
+                            ...tech,
+                            route: {
+                                success: true,
+                                distance_meters: route.distance,
+                                duration_seconds: route.duration,
+                                polyline: route.geometry.coordinates.map(c => [c[1], c[0]])
+                            }
+                        });
+                    }
+                }
+
+                if (results.length === 0) throw new Error("No valid routes found via OSRM.");
                 
-                if (!dispatchRes.ok) throw new Error(dispatchData.detail || "Dispatch routing failed");
+                const best = results.reduce((min, r) => r.route.distance_meters < min.route.distance_meters ? r : min, results[0]);
+                
+                const dispatchData = {
+                    selected_technician: {
+                        ...best,
+                        distance_meters: best.route.distance_meters,
+                        duration_seconds: best.route.duration_seconds,
+                        eta_minutes: Math.round(best.route.duration_seconds / 60)
+                    },
+                    all_routes: results.map(r => ({
+                        technician_id: r.id,
+                        name: r.name,
+                        distance_meters: r.route.distance_meters,
+                        duration_seconds: r.route.duration_seconds
+                    })),
+                    polyline: best.route.polyline
+                };
 
                 renderResult(dispatchData);
                 
@@ -613,6 +669,7 @@
                 btn.disabled = false;
             }
         }
+   }
 
         // Render Result
         function renderResult(data) {
