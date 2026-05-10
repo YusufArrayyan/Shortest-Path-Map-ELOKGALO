@@ -15,20 +15,9 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="AI Dispatcher System", version="1.0.0")
 
 # CORS — izinkan GitHub Pages dan localhost untuk development
-ALLOWED_ORIGINS = [
-    "https://yusufarrayyan.github.io",
-    "https://yusufarrayyan.github.io/",
-    "https://yusufarray.github.io",
-    "https://yusufarray.github.io/",
-    "http://localhost:3000",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "http://localhost:8080",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
