@@ -28,7 +28,7 @@ class GraphService:
                     print("Graf dimuat dari cache.")
                 else:
                     print("Mengunduh graf dari OpenStreetMap... (mungkin butuh ~60 detik)")
-                    G = ox.graph_from_point((-3.7928, 102.2608), dist=5000, network_type="drive")
+                    G = ox.graph_from_point((-3.7585, 102.2730), dist=5000, network_type="drive")
                     G = ox.add_edge_speeds(G)
                     G = ox.add_edge_travel_times(G)
                     cls._graph = G

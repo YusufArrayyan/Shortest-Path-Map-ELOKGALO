@@ -282,25 +282,33 @@ const API_BASE = "http://127.0.0.1:8000/api";
 const OSRM_BASE = "https://router.project-osrm.org/route/v1/foot";
 
 const BUILDINGS = [
-  { id:"rektorat",   name:"Rektorat",         desc:"Pusat Administrasi",    icon:"🏛️",  lat:-3.7591, lon:102.2701 },
-  { id:"ft",         name:"Fak. Teknik",       desc:"Gedung FT",             icon:"⚙️",  lat:-3.7610, lon:102.2675 },
-  { id:"feb",        name:"Fak. Ekonomi",      desc:"Gedung FEB",            icon:"📊",  lat:-3.7578, lon:102.2715 },
-  { id:"fh",         name:"Fak. Hukum",        desc:"Gedung FH",             icon:"⚖️",  lat:-3.7568, lon:102.2720 },
-  { id:"fkip",       name:"FKIP",              desc:"Fak. Keguruan",         icon:"📚",  lat:-3.7585, lon:102.2710 },
-  { id:"fisip",      name:"FISIP",             desc:"Fak. Sosial Politik",   icon:"🏢",  lat:-3.7555, lon:102.2705 },
-  { id:"faperta",    name:"Fak. Pertanian",    desc:"Gedung Pertanian",      icon:"🌾",  lat:-3.7615, lon:102.2685 },
-  { id:"perpus",     name:"Perpustakaan",      desc:"Perpustakaan Pusat",    icon:"📖",  lat:-3.7595, lon:102.2695 },
-  { id:"gor",        name:"GOR UNIB",          desc:"Gedung Olahraga",       icon:"🏟️",  lat:-3.7630, lon:102.2675 },
-  { id:"masjid",     name:"Masjid UNIB",       desc:"Masjid Raya Kampus",    icon:"🕌",  lat:-3.7570, lon:102.2685 },
-  { id:"lab",        name:"Lab Terpadu",       desc:"Laboratorium Pusat",    icon:"🔬",  lat:-3.7600, lon:102.2688 },
-  { id:"pkm",        name:"Gedung PKM",        desc:"Pusat Kegiatan Mhs",    icon:"🎓",  lat:-3.7550, lon:102.2715 },
-  { id:"poliklinik", name:"Poliklinik",        desc:"Klinik Kesehatan",      icon:"🏥",  lat:-3.7590, lon:102.2705 },
-  { id:"fmipa",      name:"FMIPA",             desc:"Fak. MIPA",             icon:"🔭",  lat:-3.7605, lon:102.2695 },
-  { id:"kantin",     name:"Kantin Pusat",      desc:"Area Makan Kampus",     icon:"🍽️",  lat:-3.7595, lon:102.2700 },
+  { id:"rektorat",       name:"Gedung Rektorat",      desc:"Pusat Administrasi",    icon:"🏛️",  lat:-3.758937446666454, lon:102.27227166318588 },
+  { id:"lt",             name:"Layanan Terpadu",      desc:"Gedung Layanan",        icon:"🏢",  lat:-3.7579953866240476, lon:102.27192719771439 },
+  { id:"danau",          name:"Danau UNIB",           desc:"Area Wisata Kampus",    icon:"🌊",  lat:-3.758364572432455, lon:102.273120068887 },
+  { id:"perpus",         name:"Perpustakaan",         desc:"Perpustakaan Pusat",    icon:"📖",  lat:-3.756785983681448, lon:102.2748615332291 },
+  { id:"fmipa",          name:"FMIPA",                desc:"Fak. MIPA",             icon:"🔬",  lat:-3.7560285312312187, lon:102.27476313128244 },
+  { id:"pkm",            name:"PKM UNIB",             desc:"Pusat Kegiatan Mhs",    icon:"🎓",  lat:-3.756449566309567, lon:102.2758265394791 },
+  { id:"gb3",            name:"GB 3 UNIB",            desc:"Gedung Bersama 3",      icon:"🏢",  lat:-3.7564901859145112, lon:102.27654051141583 },
+  { id:"gb5",            name:"GB 5 UNIB",            desc:"Gedung Bersama 5",      icon:"🏢",  lat:-3.7555256567637896, lon:102.2764626598008 },
+  { id:"fkip",           name:"FKIP UNIB",            desc:"Fak. Keguruan",         icon:"📚",  lat:-3.7561795970982788, lon:102.27746650376268 },
+  { id:"fkik",           name:"FKIK UNIB",            desc:"Fak. Kedokteran",       icon:"🏥",  lat:-3.7550800861944125, lon:102.2780382704129 },
+  { id:"danau_fkip",     name:"Danau FKIP",           desc:"Area Santai FKIP",      icon:"🌊",  lat:-3.7561297281030677, lon:102.27796591350565 },
+  { id:"stadion",        name:"Stadion UNIB",         desc:"Fasilitas Olahraga",    icon:"🏟️",  lat:-3.757510342692321, lon:102.27815529205822 },
+  { id:"gsg",            name:"GSG UNIB",             desc:"Gedung Serba Guna",     icon:"🏛️",  lat:-3.7575273903634456, lon:102.27656652603036 },
+  { id:"ft",             name:"Fak. Teknik",          desc:"Gedung Teknik",         icon:"⚙️",  lat:-3.758441886565752, lon:102.27668755108738 },
+  { id:"upatik",         name:"UPATIK UNIB",          desc:"Unit Komputer",         icon:"💻",  lat:-3.758522464562341, lon:102.27501919160771 },
+  { id:"gb2",            name:"GB 2 UNIB",            desc:"Gedung Bersama 2",      icon:"🏢",  lat:-3.758010528186283, lon:102.27395776427626 },
+  { id:"mushola",        name:"Mushola UNIB",         desc:"Tempat Ibadah",         icon:"🕌",  lat:-3.757715893568994, lon:102.2736182830509 },
+  { id:"faperta",        name:"Fak. Pertanian",       desc:"Gedung Pertanian",      icon:"🌾",  lat:-3.7593752084777687, lon:102.26922935250059 },
+  { id:"fh",             name:"Fak. Hukum",           desc:"Gedung Hukum",          icon:"⚖️",  lat:-3.7605312536864184, lon:102.26847793769042 },
+  { id:"feb",            name:"Fak. Ekonomi",         desc:"Gedung Ekonomi",        icon:"📊",  lat:-3.7616617767927454, lon:102.26855271182856 },
+  { id:"gor",            name:"GOR UNIB",             desc:"Gedung Olahraga",       icon:"🏟️",  lat:-3.76074773232111, lon:102.26750488781309 },
+  { id:"basket",         name:"Lap. Basket",          desc:"Lapangan Olahraga",     icon:"🏀",  lat:-3.7595503267493457, lon:102.26720511569208 },
+  { id:"gerbang",        name:"Gerbang Keluar",       desc:"Gerbang Depan",         icon:"🚪",  lat:-3.7591260778177786, lon:102.26663362932524 },
 ];
 
 // Map setup
-const map = L.map('map', { zoomControl: false }).setView([-3.7590, 102.2685], 16);
+const map = L.map('map', { zoomControl: false }).setView([-3.7585, 102.2730], 16);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
