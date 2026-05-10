@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNIB Campus Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#0f172a;--panel:rgba(15,23,42,0.92);--border:rgba(255,255,255,0.1);--primary:#6366f1;--primary2:#8b5cf6;--accent:#10b981;--warn:#f59e0b;--text:#f8fafc;--muted:#94a3b8;--font:'Outfit',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;height:100vh;width:100vw;overflow:hidden}
+#map{flex:1;height:100%}
+.sidebar{position:absolute;top:16px;left:16px;width:360px;max-height:calc(100vh - 32px);z-index:1000;display:flex;flex-direction:column;gap:12px;overflow-y:auto;scrollbar-width:none}
+.sidebar::-webkit-scrollbar{display:none}
+.panel{background:var(--panel);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px;animation:up .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.brand-text h1{font-size:1.1rem;font-weight:700}
+.brand-text p{font-size:0.78rem;color:var(--muted)}
+.nav-tabs{display:flex;gap:6px;background:rgba(255,255,255,0.04);border-radius:10px;padding:4px}
+.tab{flex:1;padding:8px;border:none;border-radius:8px;font-family:var(--font);font-size:0.82rem;font-weight:500;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted)}
+.tab.active{background:var(--primary);color:#fff}
+.tab:hover:not(.active){background:rgba(255,255,255,0.07);color:var(--text)}
+label{font-size:0.82rem;color:var(--muted);font-weight:500;margin-bottom:4px;display:block}
+select{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--font);font-size:0.9rem;outline:none;cursor:pointer;transition:all .2s}
+select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+select option{background:#1e293b}
+.swap-btn{align-self:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all .2s}
+.swap-btn:hover{background:rgba(99,102,241,.2);color:var(--primary);border-color:var(--primary);transform:rotate(180deg)}
+.btn{width:100%;padding:13px;border:none;border-radius:12px;font-family:var(--font);font-size:0.95rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-2px);box-shadow:0 8px 20px rgba(99,102,241,.4)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:.8rem;padding:8px}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.result{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(16,185,129,.03));border:1px solid rgba(16,185,129,.25);border-radius:14px;padding:16px;display:none;flex-direction:column;gap:12px}
+.result.show{display:flex}
+.result-title{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--accent)}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{background:rgba(0,0,0,.25);border-radius:10px;padding:10px;text-align:center}
+.stat-val{font-size:1.05rem;font-weight:700;color:var(--text)}
+.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:2px}
+.error-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:10px;padding:12px;font-size:.85rem;display:none}
+.error-box.show{display:block}
+.buildings-panel{display:none}
+.bld-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bld-card{background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:10px;padding:10px;cursor:pointer;transition:all .2s;font-size:.8rem}
+.bld-card:hover{border-color:var(--primary);background:rgba(99,102,241,.1)}
+.bld-card .icon{font-size:1.2rem;margin-bottom:4px}
+.bld-card .name{font-weight:600;font-size:.78rem}
+.bld-card .desc{color:var(--muted);font-size:.7rem;margin-top:2px}
+.back-btn{position:absolute;top:16px;right:16px;z-index:1000;background:var(--panel);backdrop-filter:blur(16px);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:30px;font-family:var(--font);font-size:.82rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;text-decoration:none}
+.back-btn:hover{border-color:var(--primary);color:var(--primary)}
+.badge{position:absolute;top:16px;right:170px;z-index:1000;background:rgba(99,102,241,.15);backdrop-filter:blur(8px);border:1px solid rgba(99,102,241,.3);color:var(--primary);padding:8px 14px;border-radius:30px;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px}
+.dot-pulse{width:7px;height:7px;background:var(--primary);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(99,102,241,.5)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.legend{background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<a href="index.html" class="back-btn"><i class="ph ph-arrow-left"></i> AI Dispatcher</a>
+<div class="badge"><div class="dot-pulse"></div> UNIB Navigator</div>
+
+<div class="sidebar">
+  <!-- Header -->
+  <div class="panel" style="animation-delay:.0s">
+    <div class="brand">
+      <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
+      <div class="brand-text">
+        <h1>UNIB Navigator</h1>
+        <p>Universitas Bengkulu — Campus Map</p>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab active" onclick="showTab('route')"><i class="ph ph-path"></i> Rute</button>
+      <button class="tab" onclick="showTab('buildings')"><i class="ph ph-map-pin-simple"></i> Gedung</button>
+    </div>
+  </div>
+
+  <!-- Route Tab -->
+  <div id="tab-route" class="panel" style="animation-delay:.1s">
+    <div>
+      <label>Titik Asal</label>
+      <select id="origin">
+        <option value="">— Pilih Gedung Asal —</option>
+      </select>
+    </div>
+    <button class="swap-btn" onclick="swapLocations()" title="Tukar"><i class="ph ph-swap"></i></button>
+    <div>
+      <label>Titik Tujuan</label>
+      <select id="destination">
+        <option value="">— Pilih Gedung Tujuan —</option>
+      </select>
+    </div>
+    <div>
+      <label>Algoritma</label>
+      <select id="algorithm">
+        <option value="astar">A* Algorithm (Recommended)</option>
+        <option value="dijkstra">Dijkstra Algorithm</option>
+      </select>
+    </div>
+    <button id="find-btn" class="btn btn-primary" onclick="findRoute()">
+      <i class="ph-bold ph-paper-plane-tilt"></i> Cari Rute Terpendek
+    </button>
+    <div id="error-box" class="error-box"></div>
+    <div id="result" class="result">
+      <div class="result-title"><i class="ph-fill ph-check-circle"></i> Rute Ditemukan</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-val" id="res-dist">-</div><div class="stat-lbl">JARAK</div></div>
+        <div class="stat"><div class="stat-val" id="res-time">-</div><div class="stat-lbl">ESTIMASI</div></div>
+        <div class="stat"><div class="stat-val" id="res-algo">-</div><div class="stat-lbl">ALGORITMA</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buildings Tab -->
+  <div id="tab-buildings" class="panel buildings-panel" style="animation-delay:.1s">
+    <div id="bld-grid" class="bld-grid"></div>
+  </div>
+
+  <!-- Legend -->
+  <div class="panel" style="animation-delay:.2s">
+    <div style="font-size:.8rem;font-weight:600;color:var(--muted);letter-spacing:.05em">LEGENDA</div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#6366f1"></div> Gedung kampus</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#10b981"></div> Titik asal</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div> Titik tujuan</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3b82f6;border-radius:2px;height:4px"></div> Rute terpendek</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000/api";
+
+const BUILDINGS = [
+  { id:"rektorat",   name:"Rektorat",         desc:"Pusat Administrasi",    icon:"🏛️",  lat:-3.7581, lon:102.2688 },
+  { id:"ft",         name:"Fak. Teknik",       desc:"Gedung FT",             icon:"⚙️",  lat:-3.7600, lon:102.2665 },
+  { id:"feb",        name:"Fak. Ekonomi",      desc:"Gedung FEB",            icon:"📊",  lat:-3.7572, lon:102.2704 },
+  { id:"fh",         name:"Fak. Hukum",        desc:"Gedung FH",             icon:"⚖️",  lat:-3.7564, lon:102.2712 },
+  { id:"fkip",       name:"FKIP",              desc:"Fak. Keguruan",         icon:"📚",  lat:-3.7587, lon:102.2696 },
+  { id:"fisip",      name:"FISIP",             desc:"Fak. Sosial Politik",   icon:"🏢",  lat:-3.7558, lon:102.2685 },
+  { id:"faperta",    name:"Fak. Pertanian",    desc:"Gedung Pertanian",      icon:"🌾",  lat:-3.7619, lon:102.2671 },
+  { id:"perpus",     name:"Perpustakaan",      desc:"Perpustakaan Pusat",    icon:"📖",  lat:-3.7590, lon:102.2681 },
+  { id:"gor",        name:"GOR UNIB",          desc:"Gedung Olahraga",       icon:"🏟️",  lat:-3.7635, lon:102.2661 },
+  { id:"masjid",     name:"Masjid UNIB",       desc:"Masjid Raya Kampus",    icon:"🕌",  lat:-3.7575, lon:102.2677 },
+  { id:"lab",        name:"Lab Terpadu",       desc:"Laboratorium Pusat",    icon:"🔬",  lat:-3.7604, lon:102.2675 },
+  { id:"pkm",        name:"Gedung PKM",        desc:"Pusat Kegiatan Mhs",    icon:"🎓",  lat:-3.7555, lon:102.2698 },
+  { id:"poliklinik", name:"Poliklinik",        desc:"Klinik Kesehatan",      icon:"🏥",  lat:-3.7595, lon:102.2692 },
+  { id:"fmipa",      name:"FMIPA",             desc:"Fak. MIPA",             icon:"🔭",  lat:-3.7609, lon:102.2682 },
+  { id:"kantin",     name:"Kantin Pusat",      desc:"Area Makan Kampus",     icon:"🍽️",  lat:-3.7597, lon:102.2685 },
+];
+
+// Map setup
+const map = L.map('map', { zoomControl: false }).setView([-3.7590, 102.2685], 16);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// Markers
+const markers = {};
+let originMarker = null, destMarker = null, routeLayer = null;
+
+function makeIcon(color, emoji) {
+  return L.divIcon({
+    html: `<div style="width:36px;height:36px;background:${color};border:2.5px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 3px 10px rgba(0,0,0,.4)">${emoji}</div>`,
+    iconSize:[36,36], iconAnchor:[18,18], popupAnchor:[0,-18], className:''
+  });
+}
+
+BUILDINGS.forEach(b => {
+  const m = L.marker([b.lat, b.lon], {
+    icon: makeIcon('rgba(99,102,241,0.9)', b.icon)
+  }).addTo(map).bindPopup(`<b style="font-size:13px">${b.icon} ${b.name}</b><br><span style="color:#94a3b8;font-size:11px">${b.desc}</span>`);
+  markers[b.id] = m;
+});
+
+// Populate selects & building grid
+const originSel = document.getElementById('origin');
+const destSel   = document.getElementById('destination');
+const bldGrid   = document.getElementById('bld-grid');
+
+BUILDINGS.forEach(b => {
+  originSel.innerHTML += `<option value="${b.id}">${b.icon} ${b.name}</option>`;
+  destSel.innerHTML   += `<option value="${b.id}">${b.icon} ${b.name}</option>`;
+  bldGrid.innerHTML   += `
+    <div class="bld-card" onclick="focusBuilding('${b.id}')">
+      <div class="icon">${b.icon}</div>
+      <div class="name">${b.name}</div>
+      <div class="desc">${b.desc}</div>
+    </div>`;
+});
+
+function focusBuilding(id) {
+  const b = BUILDINGS.find(x=>x.id===id);
+  if(!b) return;
+  map.setView([b.lat, b.lon], 18, { animate: true });
+  markers[id].openPopup();
+  showTab('route');
+  originSel.value = id;
+}
+
+function swapLocations() {
+  const tmp = originSel.value;
+  originSel.value = destSel.value;
+  destSel.value = tmp;
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=> t.classList.toggle('active', (i===0&&tab==='route')||(i===1&&tab==='buildings')));
+  document.getElementById('tab-route').style.display = tab==='route' ? 'flex' : 'none';
+  const bldPanel = document.getElementById('tab-buildings');
+  bldPanel.style.display = tab==='buildings' ? 'flex' : 'none';
+  bldPanel.classList.toggle('buildings-panel', tab!=='buildings');
+}
+
+async function findRoute() {
+  const originId = originSel.value;
+  const destId   = destSel.value;
+  const errorBox = document.getElementById('error-box');
+  const result   = document.getElementById('result');
+  errorBox.className = 'error-box';
+  result.className   = 'result';
+
+  if (!originId || !destId) {
+    errorBox.textContent = 'Pilih gedung asal dan tujuan terlebih dahulu.';
+    errorBox.className = 'error-box show'; return;
+  }
+  if (originId === destId) {
+    errorBox.textContent = 'Gedung asal dan tujuan tidak boleh sama.';
+    errorBox.className = 'error-box show'; return;
+  }
+
+  const origin = BUILDINGS.find(b=>b.id===originId);
+  const dest   = BUILDINGS.find(b=>b.id===destId);
+  const alg    = document.getElementById('algorithm').value;
+  const btn    = document.getElementById('find-btn');
+  btn.innerHTML = '<i class="ph ph-spinner" style="animation:spin 1s linear infinite"></i> Menghitung...';
+  btn.disabled = true;
+
+  // Update pin markers
+  if (originMarker) map.removeLayer(originMarker);
+  if (destMarker)   map.removeLayer(destMarker);
+  originMarker = L.marker([origin.lat, origin.lon], { icon: makeIcon('#10b981', origin.icon), zIndexOffset:1000 }).addTo(map)
+    .bindPopup(`<b>🟢 Asal: ${origin.name}</b>`).openPopup();
+  destMarker = L.marker([dest.lat, dest.lon], { icon: makeIcon('#f59e0b', dest.icon), zIndexOffset:1000 }).addTo(map)
+    .bindPopup(`<b>🟡 Tujuan: ${dest.name}</b>`);
+
+  try {
+    const res = await fetch(`${API_BASE}/route/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from_lat:origin.lat, from_lon:origin.lon, to_lat:dest.lat, to_lon:dest.lon, algorithm:alg })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Gagal menghitung rute');
+
+    if (routeLayer) map.removeLayer(routeLayer);
+    routeLayer = L.polyline(data.polyline, {
+      color:'#3b82f6', weight:6, opacity:.85,
+      lineCap:'round', lineJoin:'round',
+      dashArray:'10,15'
+    }).addTo(map);
+
+    let offset = 0;
+    const anim = () => { offset -= 1; if(routeLayer) routeLayer.setStyle({dashOffset:offset}); requestAnimationFrame(anim); };
+    anim();
+
+    const bounds = L.latLngBounds([origin.lat, origin.lon], [dest.lat, dest.lon]);
+    map.fitBounds(bounds, { padding:[80,80] });
+
+    document.getElementById('res-dist').textContent = (data.distance_meters/1000).toFixed(2)+' km';
+    document.getElementById('res-time').textContent = data.eta_minutes+' min';
+    document.getElementById('res-algo').textContent = data.algorithm==='astar' ? 'A*' : 'Dijkstra';
+    result.className = 'result show';
+
+  } catch(e) {
+    errorBox.textContent = `Error: ${e.message}`;
+    errorBox.className = 'error-box show';
+  } finally {
+    btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> Cari Rute Terpendek';
+    btn.disabled = false;
+  }
+}
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>
