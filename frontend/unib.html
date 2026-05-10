@@ -215,7 +215,7 @@ select option{background:#1e293b}
       <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
       <div class="brand-text">
         <h1>UNIB Navigator</h1>
-        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.0.8</span></p>
+        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.0.9</span></p>
       </div>
     </div>
     <div class="nav-tabs">
@@ -447,11 +447,20 @@ async function findRoute() {
     const isRektoratToGB5 = (originId === 'rektorat' && destId === 'gb5');
     
     if (isGB5ToRektorat || isRektoratToGB5) {
+        // Koordinat yang disejajarkan persis secara visual dengan aspal di peta Leaflet (OSM tiles)
         const manualPath = [
-            [-3.75553, 102.27646], [-3.75592, 102.27635], [-3.75574, 102.27550],
-            [-3.75586, 102.27457], [-3.75630, 102.27415], [-3.75685, 102.27443],
-            [-3.75731, 102.27402], [-3.75776, 102.27364], [-3.75836, 102.27334],
-            [-3.75871, 102.27310], [-3.75880, 102.27280], [-3.75893, 102.27227]
+            [-3.75550, 102.27640], // GB 5
+            [-3.75580, 102.27630], // Simpang parkir GB 5
+            [-3.75580, 102.27560], // Jalan utara PKM
+            [-3.75610, 102.27480], // Jalan utara Perpus
+            [-3.75660, 102.27440], // Jalan barat Perpus
+            [-3.75680, 102.27450], // Bundaran
+            [-3.75730, 102.27410], // Jalan arah Mushola
+            [-3.75770, 102.27380], // Samping Mushola
+            [-3.75810, 102.27370], // Jalan lurus selatan
+            [-3.75850, 102.27320], // Pinggir Danau
+            [-3.75880, 102.27250], // Belok ke Rektorat
+            [-3.75890, 102.27220]  // Rektorat
         ];
         data = {
             algorithm: 'Dijkstra (Campus Mesh)',
@@ -465,8 +474,9 @@ async function findRoute() {
 
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline(data.polyline, {
-      color:'#3b82f6', weight:7, opacity:.9,
-      lineCap:'round', lineJoin:'round'
+      color:'#3b82f6', weight:6, opacity:.85,
+      lineCap:'round', lineJoin:'round',
+      dashArray:'10,15'
     }).addTo(map);
 
     let offset = 0;
