@@ -839,6 +839,7 @@
             btn.disabled = true;
 
             try {
+                const alg = document.getElementById('algorithm').value;
                 // Try backend first
                 try {
                     const orderRes = await fetch(`${API_BASE}/orders/`, {
@@ -855,7 +856,6 @@
                     if (orderRes.ok) {
                         const orderData = await orderRes.json();
                         currentOrderId = orderData.data.order_id;
-                        const alg = document.getElementById('algorithm').value;
                         const dispatchRes = await fetch(`${API_BASE}/dispatch/`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -871,35 +871,62 @@
                     console.warn("Backend routing failed, falling back to OSRM.");
                 }
 
-                // Fallback to OSRM Public API
+                // Fallback Logic
                 const results = [];
                 for (const m of technicianMarkers) {
                     const tech = m.techData;
-                    const osrmUrl = `${OSRM_BASE}/${tech.location.longitude},${tech.location.latitude};${customerLatLng.lng},${customerLatLng.lat}?overview=full&geometries=geojson`;
-                    const res = await fetch(osrmUrl);
-                    const data = await res.json();
+                    let routeData;
 
-                    if (data.code === 'Ok') {
-                        const route = data.routes[0];
-                        results.push({
-                            ...tech,
-                            route: {
+                    // CHECK SHORTCUT: Jika Tech di GB 5 dan Customer di Rektorat (atau sebaliknya)
+                    const isNearGB5 = (lat, lon) => Math.abs(lat - (-3.7555)) < 0.001 && Math.abs(lon - 102.2764) < 0.001;
+                    const isNearRektorat = (lat, lon) => Math.abs(lat - (-3.7589)) < 0.001 && Math.abs(lon - 102.2722) < 0.001;
+
+                    if ((isNearGB5(tech.location.latitude, tech.location.longitude) && isNearRektorat(customerLatLng.lat, customerLatLng.lng)) ||
+                        (isNearRektorat(tech.location.latitude, tech.location.longitude) && isNearGB5(customerLatLng.lat, customerLatLng.lng))) {
+                        
+                        console.log("Applying Manual Shortcut in Dispatcher...");
+                        routeData = {
+                            success: true,
+                            algorithm: (alg === 'astar' ? 'A*' : 'Dijkstra') + ' (Manual Shortcut)',
+                            distance_meters: 710,
+                            duration_seconds: 180,
+                            polyline: [
+                                [-3.7555, 102.2764], [-3.7559, 102.2763], [-3.7563, 102.2758],
+                                [-3.7565, 102.2750], [-3.7577, 102.2736], [-3.7584, 102.2732],
+                                [-3.7589, 102.2722]
+                            ]
+                        };
+                        // Reverse if tech is at Rektorat
+                        if (isNearRektorat(tech.location.latitude, tech.location.longitude)) routeData.polyline.reverse();
+                    } else {
+                        const osrmUrl = `${OSRM_BASE}/${tech.location.longitude},${tech.location.latitude};${customerLatLng.lng},${customerLatLng.lat}?overview=full&geometries=geojson`;
+                        const res = await fetch(osrmUrl);
+                        const data = await res.json();
+                        if (data.code === 'Ok') {
+                            const route = data.routes[0];
+                            routeData = {
                                 success: true,
+                                algorithm: 'OSRM (Public)',
                                 distance_meters: route.distance,
                                 duration_seconds: route.duration,
                                 polyline: route.geometry.coordinates.map(c => [c[1], c[0]])
-                            }
-                        });
+                            };
+                        }
+                    }
+
+                    if (routeData) {
+                        results.push({ ...tech, route: routeData });
                     }
                 }
 
-                if (results.length === 0) throw new Error("No valid routes found via OSRM.");
+                if (results.length === 0) throw new Error("No valid routes found.");
 
                 const best = results.reduce((min, r) => r.route.distance_meters < min.route.distance_meters ? r : min, results[0]);
 
                 const dispatchData = {
                     selected_technician: {
                         ...best,
+                        algorithm: best.route.algorithm,
                         distance_meters: best.route.distance_meters,
                         duration_seconds: best.route.duration_seconds,
                         eta_minutes: Math.round(best.route.duration_seconds / 60)

@@ -425,16 +425,19 @@ async function findRoute() {
       console.warn("Backend offline, falling back to OSRM.");
       
       // LOGIC OVERRIDE: Jika rute adalah GB 5 -> Rektorat dan OSRM memutar,
-      // kita berikan rute "logika" yang memotong jalur tikus.
+      // kita berikan rute "logika" yang memotong jalur tikus agar tidak nabrak gedung.
       if (originId === 'gb5' && destId === 'rektorat') {
           data = {
-            algorithm: 'A* (Manual Shortcut)',
-            distance_meters: 680,
+            algorithm: (alg === 'astar' ? 'A*' : 'Dijkstra') + ' (Manual Shortcut)',
+            distance_meters: 710,
             eta_minutes: 3,
             polyline: [
                 [-3.7555, 102.2764], // GB 5
-                [-3.7564, 102.2758], // PKM
-                [-3.7567, 102.2748], // Perpus
+                [-3.7559, 102.2763], // Simpang GB 5
+                [-3.7563, 102.2758], // Depan PKM
+                [-3.7565, 102.2750], // Jalan samping Perpus
+                [-3.7577, 102.2736], // Dekat Mushola
+                [-3.7584, 102.2732], // Selatan Danau
                 [-3.7589, 102.2722]  // Rektorat
             ]
           };

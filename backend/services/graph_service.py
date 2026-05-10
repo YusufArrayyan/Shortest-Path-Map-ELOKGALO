@@ -36,11 +36,17 @@ class GraphService:
                     G = ox.add_edge_travel_times(G)
                     
                     # Tambahkan Manual Shortcuts (Gang-gang/Jalan Tikus)
-                    # Sesuai logika Google Maps dan permintaan user
+                    # Sesuai logika Google Maps dan permintaan user agar tidak nabrak gedung
                     shortcuts = [
-                        ((-3.7555, 102.2764), (-3.7564, 102.2758)), # GB 5 to PKM
-                        ((-3.7564, 102.2758), (-3.7567, 102.2748)), # PKM to Perpus
-                        ((-3.7567, 102.2748), (-3.7589, 102.2722)), # Perpus to Rektorat
+                        # GB 5 to Rektorat via PKM & Perpus (Detailed Path)
+                        ((-3.7555, 102.2764), (-3.7559, 102.2763)), 
+                        ((-3.7559, 102.2763), (-3.7563, 102.2758)),
+                        ((-3.7563, 102.2758), (-3.7565, 102.2750)),
+                        ((-3.7565, 102.2750), (-3.7577, 102.2736)),
+                        ((-3.7577, 102.2736), (-3.7584, 102.2732)),
+                        ((-3.7584, 102.2732), (-3.7589, 102.2722)),
+                        
+                        # Shortcuts lainnya
                         ((-3.7593, 102.2692), (-3.7589, 102.2722)), # Faperta to Rektorat
                         ((-3.7605, 102.2684), (-3.7589, 102.2722)), # FH to Rektorat
                         ((-3.7561, 102.2774), (-3.7575, 102.2765)), # FKIP to GSG
