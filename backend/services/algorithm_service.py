@@ -25,11 +25,11 @@ class AlgorithmService:
                 weight='travel_time'
             )
             distance = sum(
-                G[u][v][0].get('length', 0)
+                G[u][v][0].get('length', 0)  # type: ignore
                 for u, v in zip(path[:-1], path[1:])
             )
             duration = sum(
-                G[u][v][0].get('travel_time', 0)
+                G[u][v][0].get('travel_time', 0)  # type: ignore
                 for u, v in zip(path[:-1], path[1:])
             )
             polyline = GraphService.get_polyline_coords(path)
@@ -54,7 +54,7 @@ class AlgorithmService:
             path = nx.dijkstra_path(G, source_node, target_node, weight='length')
             distance = nx.dijkstra_path_length(G, source_node, target_node, weight='length')
             duration = sum(
-                G[u][v][0].get('travel_time', 0)
+                G[u][v][0].get('travel_time', 0)  # type: ignore
                 for u, v in zip(path[:-1], path[1:])
             )
             polyline = GraphService.get_polyline_coords(path)
