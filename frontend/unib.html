@@ -409,6 +409,7 @@ async function findRoute() {
     let data;
     // Try backend first
     try {
+      console.log(`Menghubungkan ke backend: ${API_BASE}`);
       const res = await fetch(`${API_BASE}/route/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -416,8 +417,9 @@ async function findRoute() {
       });
       if (res.ok) {
         data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Gagal menghitung rute di backend');
       } else {
-        throw new Error();
+        throw new Error(`Backend Error: ${res.status}`);
       }
     } catch (e) {
       console.warn("Backend offline, falling back to OSRM.");

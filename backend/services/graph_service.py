@@ -27,8 +27,8 @@ class GraphService:
                         cls._graph = pickle.load(f)
                     print("Graf dimuat dari cache.")
                 else:
-                    print("Mengunduh graf dari OpenStreetMap... (mungkin butuh ~60 detik)")
-                    G = ox.graph_from_point((-3.7585, 102.2730), dist=5000, network_type="all")
+                    print("Mengunduh graf Universitas Bengkulu dari OpenStreetMap...")
+                    G = ox.graph_from_place("Universitas Bengkulu", network_type="walk")
                     G = ox.add_edge_speeds(G)
                     G = ox.add_edge_travel_times(G)
                     cls._graph = G
