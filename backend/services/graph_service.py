@@ -28,9 +28,10 @@ class GraphService:
                     print("Graf dimuat dari cache.")
                 else:
                     print("Mengunduh graf Universitas Bengkulu dari OpenStreetMap...")
-                    # Menggunakan titik pusat kampus (Rektorat) dengan radius agar lebih detail
+                    # Menggunakan titik pusat kampus (Rektorat) dengan radius lebih kecil agar cepat di Render
                     center_point = (-3.7589, 102.2722)
-                    G = ox.graph_from_point(center_point, dist=1500, network_type="walk")
+                    ox.settings.requests_timeout = 60 # Timeout lebih lama untuk download
+                    G = ox.graph_from_point(center_point, dist=900, network_type="walk")
                     G = ox.add_edge_speeds(G)
                     G = ox.add_edge_travel_times(G)
                     
