@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from database import get_db
-import models
+from fastapi import APIRouter, Depends # type: ignore
+from sqlalchemy.orm import Session # type: ignore
+from database import get_db # type: ignore
+import models # type: ignore
 
 router = APIRouter()
 

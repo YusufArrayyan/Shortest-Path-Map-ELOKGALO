@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from services.algorithm_service import AlgorithmService
+from fastapi import APIRouter, HTTPException # type: ignore
+from pydantic import BaseModel # type: ignore
+from services.algorithm_service import AlgorithmService # type: ignore
 
 router = APIRouter()
 

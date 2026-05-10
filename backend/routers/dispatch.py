@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from database import get_db
-from services.dispatch_service import DispatchService
-import models
+from fastapi import APIRouter, HTTPException, Depends # type: ignore
+from sqlalchemy.orm import Session # type: ignore
+from pydantic import BaseModel # type: ignore
+from database import get_db # type: ignore
+from services.dispatch_service import DispatchService # type: ignore
+import models # type: ignore
 
 router = APIRouter()
 
