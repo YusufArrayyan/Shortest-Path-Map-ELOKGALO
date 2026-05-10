@@ -215,7 +215,7 @@ select option{background:#1e293b}
       <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
       <div class="brand-text">
         <h1>UNIB Navigator</h1>
-        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.1.0</span></p>
+        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.1.1</span></p>
       </div>
     </div>
     <div class="nav-tabs">
@@ -451,20 +451,21 @@ async function findRoute() {
         const manualPath = [
             [-3.75550, 102.27640], // GB 5
             [-3.75580, 102.27630], // Simpang parkir GB 5
-            [-3.75580, 102.27560], // Jalan utara PKM
-            [-3.75610, 102.27480], // Jalan utara Perpus
-            [-3.75660, 102.27440], // Jalan barat Perpus
-            [-3.75680, 102.27450], // Bundaran
-            [-3.75730, 102.27410], // Jalan arah Mushola
-            [-3.75770, 102.27380], // Samping Mushola
-            [-3.75780, 102.27250], // Jembatan antara 2 danau (ke Barat)
-            [-3.75880, 102.27240], // Jalan sisi Barat danau (ke Selatan)
-            [-3.75890, 102.27220]  // Rektorat
+            [-3.75570, 102.27420], // Lurus terus ke barat, lewat utara PKM & Perpus, sampai simpang Lab Fisika
+            [-3.75650, 102.27410], // Belok kiri (selatan) lewat barat Perpus
+            [-3.75700, 102.27390], // Lurus ke selatan lewat timur Pascasarjana Pertanian
+            [-3.75750, 102.27360], // Sampai simpang utara Mushola
+            [-3.75770, 102.27330], // Belok kanan (barat) arah jembatan
+            [-3.75780, 102.27250], // Lewat jembatan antar danau
+            [-3.75800, 102.27180], // Jalan terus ke barat di utara parkiran Rektorat
+            [-3.75830, 102.27140], // Tikungan jauh di barat
+            [-3.75860, 102.27170], // Masuk area Rektorat dari barat
+            [-3.75890, 102.27220]  // Gedung Rektorat
         ];
         data = {
-            algorithm: 'Dijkstra (Campus Mesh)',
-            distance_meters: 730,
-            eta_minutes: 3,
+            algorithm: 'Dijkstra (Custom User Path)',
+            distance_meters: 850,
+            eta_minutes: 4,
             polyline: isRektoratToGB5 ? [...manualPath].reverse() : manualPath
         };
     }
