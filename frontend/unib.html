@@ -62,6 +62,42 @@ select option{background:#1e293b}
 .legend{background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .leg-item{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  body { flex-direction: column; }
+  .sidebar {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 45vh;
+    padding: 12px;
+    gap: 8px;
+    border-radius: 20px 20px 0 0;
+    background: var(--panel);
+    box-shadow: 0 -8px 20px rgba(0,0,0,0.4);
+  }
+  .panel { padding: 15px; border-radius: 14px; }
+  .back-btn {
+    top: 12px;
+    right: 12px;
+    padding: 8px 14px;
+    font-size: 0.75rem;
+  }
+  .badge {
+    top: 12px;
+    right: auto;
+    left: 12px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  .brand-logo { width: 32px; height: 32px; font-size: 1rem; }
+  .brand-text h1 { font-size: 0.95rem; }
+  .btn { padding: 11px; font-size: 0.85rem; }
+  .stat-val { font-size: 0.9rem; }
+  .stat-lbl { font-size: 0.6rem; }
+}
 </style>
 </head>
 <body>
