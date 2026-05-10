@@ -215,7 +215,7 @@ select option{background:#1e293b}
       <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
       <div class="brand-text">
         <h1>UNIB Navigator</h1>
-        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.0.7</span></p>
+        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.0.8</span></p>
       </div>
     </div>
     <div class="nav-tabs">
@@ -454,8 +454,8 @@ async function findRoute() {
             [-3.75871, 102.27310], [-3.75880, 102.27280], [-3.75893, 102.27227]
         ];
         data = {
-            algorithm: 'Dijkstra (Campus Shortcut)',
-            distance_meters: 710,
+            algorithm: 'Dijkstra (Campus Mesh)',
+            distance_meters: 730,
             eta_minutes: 3,
             polyline: isRektoratToGB5 ? [...manualPath].reverse() : manualPath
         };
@@ -465,9 +465,8 @@ async function findRoute() {
 
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline(data.polyline, {
-      color:'#3b82f6', weight:6, opacity:.85,
-      lineCap:'round', lineJoin:'round',
-      dashArray:'10,15'
+      color:'#3b82f6', weight:7, opacity:.9,
+      lineCap:'round', lineJoin:'round'
     }).addTo(map);
 
     let offset = 0;

@@ -35,32 +35,43 @@ class GraphService:
                     G = ox.add_edge_speeds(G)
                     G = ox.add_edge_travel_times(G)
                     
-                    # Tambahkan Manual Shortcuts (Gang-gang/Jalan Tikus)
-                    # Sesuai logika Google Maps dan permintaan user agar tidak nabrak gedung
-                    shortcuts = [
-                        # GB 5 to Rektorat via PKM & Perpus (Detailed Path)
-                        ((-3.7555, 102.2764), (-3.7559, 102.2763)), 
-                        ((-3.7559, 102.2763), (-3.7563, 102.2758)),
-                        ((-3.7563, 102.2758), (-3.7565, 102.2750)),
-                        ((-3.7565, 102.2750), (-3.7577, 102.2736)),
-                        ((-3.7577, 102.2736), (-3.7584, 102.2732)),
-                        ((-3.7584, 102.2732), (-3.7589, 102.2722)),
-                        
-                        # Shortcuts lainnya
-                        ((-3.7593, 102.2692), (-3.7589, 102.2722)), # Faperta to Rektorat
-                        ((-3.7605, 102.2684), (-3.7589, 102.2722)), # FH to Rektorat
-                        ((-3.7561, 102.2774), (-3.7575, 102.2765)), # FKIP to GSG
-                        ((-3.7575, 102.2765), (-3.7584, 102.2766)), # GSG to FT
+                    # ADVANCED CAMPUS MESH: Tambahkan jaringan jalur tikus menyeluruh
+                    # Menghubungkan Rektorat ke pusat kampus dan gedung-gedung lainnya
+                    print("Membangun jaringan jalur tikus (Campus Mesh)...")
+                    
+                    # Titik-titik krusial di jalur putih/gang
+                    P = {
+                        "rektorat": (-3.75893, 102.27227),
+                        "danau_selatan": (-3.75846, 102.27321),
+                        "danau_timur": (-3.75776, 102.27364), # Mushola
+                        "bundaran": (-3.75685, 102.27443),
+                        "perpus": (-3.75640, 102.27508),
+                        "pkm": (-3.75628, 102.27581),
+                        "gb5": (-3.75553, 102.27646),
+                        "fkip": (-3.75618, 102.27747),
+                        "gsg": (-3.75751, 102.27652),
+                        "ft": (-3.75842, 102.27663),
+                        "faperta": (-3.75932, 102.26922),
+                        "fh": (-3.76053, 102.26848),
+                    }
+                    
+                    # Hubungkan titik-titik tersebut menjadi jaringan (mesh)
+                    mesh_edges = [
+                        ("rektorat", "danau_selatan"), ("danau_selatan", "danau_timur"),
+                        ("danau_timur", "bundaran"), ("bundaran", "perpus"),
+                        ("perpus", "pkm"), ("pkm", "gb5"), ("pkm", "fkip"),
+                        ("gb5", "fkip"), ("bundaran", "gsg"), ("gsg", "ft"),
+                        ("gsg", "fkip"), ("rektorat", "faperta"), ("rektorat", "fh")
                     ]
                     
-                    print("Menambahkan jalur tikus manual...")
-                    for start, end in shortcuts:
+                    for s_key, e_key in mesh_edges:
+                        start, end = P[s_key], P[e_key]
                         u = ox.distance.nearest_nodes(G, start[1], start[0])
                         v = ox.distance.nearest_nodes(G, end[1], end[0])
                         dist = ox.distance.great_circle(start[0], start[1], end[0], end[1])
-                        # Tambahkan edge dua arah (pedestrian bisa lewat dua arah)
-                        G.add_edge(u, v, length=dist, travel_time=dist/1.1, speed_kph=4, manual=True)
-                        G.add_edge(v, u, length=dist, travel_time=dist/1.1, speed_kph=4, manual=True)
+                        # Tambahkan edge dua arah dengan bobot rendah agar diprioritaskan
+                        G.add_edge(u, v, length=dist, travel_time=dist/1.5, speed_kph=6, manual=True)
+                        G.add_edge(v, u, length=dist, travel_time=dist/1.5, speed_kph=6, manual=True)
 
                     cls._graph = G
                     try:
