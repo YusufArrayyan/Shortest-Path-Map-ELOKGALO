@@ -33,6 +33,28 @@ class GraphService:
                     G = ox.graph_from_point(center_point, dist=1500, network_type="walk")
                     G = ox.add_edge_speeds(G)
                     G = ox.add_edge_travel_times(G)
+                    
+                    # Tambahkan Manual Shortcuts (Gang-gang/Jalan Tikus)
+                    # Sesuai logika Google Maps dan permintaan user
+                    shortcuts = [
+                        ((-3.7555, 102.2764), (-3.7564, 102.2758)), # GB 5 to PKM
+                        ((-3.7564, 102.2758), (-3.7567, 102.2748)), # PKM to Perpus
+                        ((-3.7567, 102.2748), (-3.7589, 102.2722)), # Perpus to Rektorat
+                        ((-3.7593, 102.2692), (-3.7589, 102.2722)), # Faperta to Rektorat
+                        ((-3.7605, 102.2684), (-3.7589, 102.2722)), # FH to Rektorat
+                        ((-3.7561, 102.2774), (-3.7575, 102.2765)), # FKIP to GSG
+                        ((-3.7575, 102.2765), (-3.7584, 102.2766)), # GSG to FT
+                    ]
+                    
+                    print("Menambahkan jalur tikus manual...")
+                    for start, end in shortcuts:
+                        u = ox.distance.nearest_nodes(G, start[1], start[0])
+                        v = ox.distance.nearest_nodes(G, end[1], end[0])
+                        dist = ox.distance.great_circle(start[0], start[1], end[0], end[1])
+                        # Tambahkan edge dua arah (pedestrian bisa lewat dua arah)
+                        G.add_edge(u, v, length=dist, travel_time=dist/1.1, speed_kph=4, manual=True)
+                        G.add_edge(v, u, length=dist, travel_time=dist/1.1, speed_kph=4, manual=True)
+
                     cls._graph = G
                     try:
                         with open(GRAPH_CACHE, "wb") as f:
