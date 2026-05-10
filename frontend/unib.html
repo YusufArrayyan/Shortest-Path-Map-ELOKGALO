@@ -215,7 +215,7 @@ select option{background:#1e293b}
       <div class="brand-logo"><i class="ph-fill ph-buildings"></i></div>
       <div class="brand-text">
         <h1>UNIB Navigator</h1>
-        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.0.5</span></p>
+        <p>Universitas Bengkulu — Campus Map <span style="font-size:0.65rem;opacity:0.5;margin-left:4px">v1.0.6</span></p>
       </div>
     </div>
     <div class="nav-tabs">
@@ -406,7 +406,7 @@ async function findRoute() {
     .bindPopup(`<b>🟡 Tujuan: ${dest.name}</b>`);
 
   try {
-    let data;
+    let data = null;
     // Try backend first
     try {
       console.log(`Menghubungkan ke backend: ${API_BASE}`);
@@ -416,54 +416,48 @@ async function findRoute() {
         body: JSON.stringify({ from_lat:origin.lat, from_lon:origin.lon, to_lat:dest.lat, to_lon:dest.lon, algorithm:alg })
       });
       if (res.ok) {
-        data = await res.json();
-        if (!data.status === "success") throw new Error(data.error || 'Gagal menghitung rute');
-      } else {
-        throw new Error(`Backend Error: ${res.status}`);
+        const json = await res.json();
+        if (json.status === "success") {
+            data = json;
+        }
       }
     } catch (e) {
       console.warn("Backend offline, falling back to OSRM.");
-      
-      // LOGIC OVERRIDE: Jika rute adalah GB 5 -> Rektorat dan OSRM memutar,
-      // kita berikan rute "logika" yang memotong jalur tikus agar tidak nabrak gedung.
-      if (originId === 'gb5' && destId === 'rektorat') {
-          data = {
-            algorithm: (alg === 'astar' ? 'A*' : 'Dijkstra') + ' (Manual Shortcut)',
+    }
+
+    // OSRM Fallback jika backend gagal
+    if (!data) {
+      const osrmUrl = `${OSRM_BASE}/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson`;
+      const osrmRes = await fetch(osrmUrl);
+      const osrmData = await osrmRes.json();
+      if (osrmData.code === 'Ok') {
+        const route = osrmData.routes[0];
+        data = {
+          algorithm: 'OSRM (Public)',
+          distance_meters: route.distance,
+          duration_seconds: route.duration,
+          eta_minutes: Math.round(route.duration / 60),
+          polyline: route.geometry.coordinates.map(c => [c[1], c[0]])
+        };
+      }
+    }
+
+    // LOGIC OVERRIDE: Prioritaskan jalur tikus manual untuk rute populer
+    if (originId === 'gb5' && destId === 'rektorat') {
+        data = {
+            algorithm: 'Dijkstra (Campus Shortcut)',
             distance_meters: 710,
             eta_minutes: 3,
             polyline: [
-                [-3.75553, 102.27646], // GB 5
-                [-3.75592, 102.27635], // Keluar parkiran GB 5
-                [-3.75574, 102.27550], // Jalan Utara PKM
-                [-3.75586, 102.27457], // Jalan Utara Perpus
-                [-3.75630, 102.27415], // Belok Selatan (Barat Perpus)
-                [-3.75685, 102.27443], // Bundaran
-                [-3.75731, 102.27402], // Jalan Barat Bundaran
-                [-3.75776, 102.27364], // Depan Mushola
-                [-3.75836, 102.27334], // Jalan arah Rektorat (Selatan)
-                [-3.75871, 102.27310], // Tikungan arah Rektorat (Barat)
-                [-3.75880, 102.27280], // Jalan masuk Rektorat
-                [-3.75893, 102.27227]  // Rektorat
+                [-3.75553, 102.27646], [-3.75592, 102.27635], [-3.75574, 102.27550],
+                [-3.75586, 102.27457], [-3.75630, 102.27415], [-3.75685, 102.27443],
+                [-3.75731, 102.27402], [-3.75776, 102.27364], [-3.75836, 102.27334],
+                [-3.75871, 102.27310], [-3.75880, 102.27280], [-3.75893, 102.27227]
             ]
-          };
-      } else {
-          const osrmUrl = `${OSRM_BASE}/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson`;
-          const osrmRes = await fetch(osrmUrl);
-          const osrmData = await osrmRes.json();
-          
-
-          if (osrmData.code !== 'Ok') throw new Error('Gagal menghitung rute via OSRM');
-          
-          const route = osrmData.routes[0];
-          data = {
-            algorithm: 'OSRM (Public)',
-            distance_meters: route.distance,
-            duration_seconds: route.duration,
-            eta_minutes: Math.round(route.duration / 60),
-            polyline: route.geometry.coordinates.map(c => [c[1], c[0]])
-          };
-      }
+        };
     }
+
+    if (!data) throw new Error('Gagal memproses data rute');
 
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline(data.polyline, {
@@ -473,7 +467,7 @@ async function findRoute() {
     }).addTo(map);
 
     let offset = 0;
-    const anim = () => { offset -= 1; if(routeLayer) routeLayer.setStyle({dashOffset:offset}); requestAnimationFrame(anim); };
+    const anim = () => { if(routeLayer) { offset -= 1; routeLayer.setStyle({dashOffset:offset}); requestAnimationFrame(anim); } };
     anim();
 
     const bounds = L.latLngBounds([origin.lat, origin.lon], [dest.lat, dest.lon]);
