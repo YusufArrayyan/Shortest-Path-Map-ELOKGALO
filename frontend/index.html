@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dispatcher System</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Custom Styles -->
+    <style>
+       :root {
+           --bg-base: #1e293b;
+           --bg-panel: rgba(15, 23, 42, 0.88);
+           --border-color: rgba(255, 255, 255, 0.12);
+           --primary: #3b82f6;
+           --primary-hover: #2563eb;
+           --success: #10b981;
+           --text-main: #f8fafc;
+           --text-muted: #94a3b8;
+           --font-family: 'Outfit', sans-serif;
+       }
+       * { box-sizing: border-box; margin: 0; padding: 0; }
+       body {
+           font-family: var(--font-family);
+           background-color: var(--bg-base);
+           color: var(--text-main);
+           overflow: hidden;
+           display: flex;
+           height: 100vh;
+           width: 100vw;
+       }
+       #map {
+           flex: 1;
+           height: 100%;
+           z-index: 1;
+       }
+       .sidebar {
+           position: absolute;
+           top: 20px;
+           left: 20px;
+           width: 380px;
+           max-height: calc(100vh - 40px);
+           z-index: 1000;
+           display: flex;
+           flex-direction: column;
+           gap: 16px;
+           overflow-y: auto;
+           scrollbar-width: none;
+       }
+       .sidebar::-webkit-scrollbar { display: none; }
+       
+       .panel {
+           background: var(--bg-panel);
+           backdrop-filter: blur(16px);
+           -webkit-backdrop-filter: blur(16px);
+           border: 1px solid var(--border-color);
+           border-radius: 20px;
+           padding: 24px;
+           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+           display: flex;
+           flex-direction: column;
+           gap: 16px;
+           opacity: 0;
+           transform: translateY(20px);
+           animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+       }
+       
+       @keyframes slideUp {
+           to { opacity: 1; transform: translateY(0); }
+       }
+       
+       .panel-header {
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           font-size: 1.25rem;
+           font-weight: 600;
+           color: var(--text-main);
+           margin-bottom: 8px;
+       }
+       .panel-header i {
+           color: var(--primary);
+           font-size: 1.5rem;
+       }
+
+       .input-group {
+           display: flex;
+           flex-direction: column;
+           gap: 8px;
+       }
+       .input-group label {
+           font-size: 0.85rem;
+           color: var(--text-muted);
+           font-weight: 500;
+       }
+       input, textarea, select {
+           width: 100%;
+           background: rgba(255, 255, 255, 0.05);
+           border: 1px solid var(--border-color);
+           border-radius: 12px;
+           padding: 12px 16px;
+           color: var(--text-main);
+           font-family: inherit;
+           font-size: 0.95rem;
+           outline: none;
+           transition: all 0.2s ease;
+       }
+       input:focus, textarea:focus, select:focus {
+           border-color: var(--primary);
+           background: rgba(255, 255, 255, 0.1);
+           box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+       }
+       textarea { resize: none; height: 80px; }
+       
+       select option {
+           background: var(--bg-base);
+           color: var(--text-main);
+       }
+
+       .btn-primary {
+           background: var(--primary);
+           color: white;
+           border: none;
+           border-radius: 12px;
+           padding: 14px;
+           font-size: 1rem;
+           font-weight: 600;
+           font-family: inherit;
+           cursor: pointer;
+           transition: all 0.2s ease;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           gap: 8px;
+           margin-top: 8px;
+       }
+       .btn-primary:hover:not(:disabled) {
+           background: var(--primary-hover);
+           transform: translateY(-2px);
+           box-shadow: 0 10px 20px -10px var(--primary);
+       }
+       .btn-primary:active:not(:disabled) {
+           transform: translateY(0);
+       }
+       .btn-primary:disabled {
+           opacity: 0.7;
+           cursor: not-allowed;
+       }
+
+       .btn-dummy {
+           position: absolute;
+           bottom: 24px;
+           right: 24px;
+           background: rgba(255, 255, 255, 0.1);
+           backdrop-filter: blur(8px);
+           border: 1px solid var(--border-color);
+           color: var(--text-main);
+           padding: 10px 16px;
+           border-radius: 10px;
+           font-size: 0.85rem;
+           font-weight: 500;
+           cursor: pointer;
+           z-index: 1000;
+           transition: all 0.2s ease;
+           display: flex;
+           align-items: center;
+           gap: 8px;
+       }
+       .btn-dummy:hover {
+           background: rgba(255, 255, 255, 0.2);
+       }
+
+       .location-info {
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           background: rgba(16, 185, 129, 0.1);
+           border: 1px solid rgba(16, 185, 129, 0.2);
+           color: var(--success);
+           padding: 10px 14px;
+           border-radius: 10px;
+           font-size: 0.85rem;
+           font-weight: 500;
+       }
+       .location-info i { font-size: 1.1rem; }
+
+       .tech-list {
+           display: flex;
+           flex-direction: column;
+           gap: 12px;
+       }
+       .tech-item {
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           background: rgba(255, 255, 255, 0.03);
+           padding: 12px;
+           border-radius: 12px;
+           border: 1px solid transparent;
+           transition: all 0.2s ease;
+       }
+       .tech-item:hover {
+           background: rgba(255, 255, 255, 0.05);
+           border-color: var(--border-color);
+       }
+       .tech-avatar {
+           width: 36px;
+           height: 36px;
+           border-radius: 50%;
+           background: linear-gradient(135deg, var(--primary), #8b5cf6);
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-weight: 600;
+           font-size: 0.9rem;
+       }
+       .tech-details {
+           flex: 1;
+       }
+       .tech-name {
+           font-weight: 600;
+           font-size: 0.95rem;
+       }
+       .tech-area {
+           font-size: 0.8rem;
+           color: var(--text-muted);
+           margin-top: 2px;
+       }
+       .tech-status {
+           width: 8px;
+           height: 8px;
+           background: var(--success);
+           border-radius: 50%;
+           box-shadow: 0 0 8px var(--success);
+       }
+
+       .result-card {
+           background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02));
+           border: 1px solid rgba(16, 185, 129, 0.3);
+           border-radius: 14px;
+           padding: 16px;
+           margin-top: 8px;
+       }
+       .result-hero {
+           display: flex;
+           align-items: center;
+           gap: 16px;
+           margin-bottom: 16px;
+       }
+       .result-avatar {
+           width: 48px;
+           height: 48px;
+           border-radius: 50%;
+           background: var(--success);
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 1.5rem;
+       }
+       .result-stats {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 12px;
+       }
+       .stat-box {
+           background: rgba(0,0,0,0.2);
+           padding: 10px;
+           border-radius: 10px;
+           display: flex;
+           flex-direction: column;
+           gap: 4px;
+       }
+       .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+       .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+       
+       .route-list {
+           margin-top: 16px;
+           display: flex;
+           flex-direction: column;
+           gap: 8px;
+       }
+       .route-item {
+           display: flex;
+           justify-content: space-between;
+           font-size: 0.85rem;
+           padding: 8px 12px;
+           border-radius: 8px;
+           background: rgba(255,255,255,0.03);
+       }
+       .route-item.selected {
+           background: rgba(59, 130, 246, 0.15);
+           color: #60a5fa;
+           font-weight: 500;
+           border: 1px solid rgba(59, 130, 246, 0.3);
+       }
+
+       .leaflet-popup-content-wrapper {
+           background: var(--bg-panel);
+           backdrop-filter: blur(10px);
+           color: var(--text-main);
+           border: 1px solid var(--border-color);
+           border-radius: 12px;
+           box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+       }
+       .leaflet-popup-tip { background: var(--bg-panel); border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+       .custom-marker {
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           width: 36px;
+           height: 36px;
+           background: white;
+           border: 2.5px solid white;
+           border-radius: 50%;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+           font-size: 17px;
+       }
+       .marker-customer { background: #fee2e2; border-color: #ef4444; color: #ef4444; }
+       .marker-tech { background: #d1fae5; border-color: #10b981; color: #10b981; }
+       .marker-selected { 
+           background: #dbeafe;
+           border-color: var(--primary); 
+           color: var(--primary);
+           box-shadow: 0 0 20px rgba(59,130,246,0.6);
+           transform: scale(1.2);
+           transition: all 0.3s ease;
+       }
+
+       .status-badge {
+           position: absolute;
+           top: 24px;
+           right: 24px;
+           z-index: 1000;
+           background: rgba(16, 185, 129, 0.15);
+           backdrop-filter: blur(8px);
+           border: 1px solid rgba(16, 185, 129, 0.3);
+           color: var(--success);
+           padding: 8px 16px;
+           border-radius: 30px;
+           font-size: 0.85rem;
+           font-weight: 600;
+           display: flex;
+           align-items: center;
+           gap: 8px;
+       }
+       .status-dot {
+           width: 8px;
+           height: 8px;
+           background: var(--success);
+           border-radius: 50%;
+           animation: pulse 2s infinite;
+       }
+       @keyframes pulse {
+           0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+           70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+           100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+       }
+    </style>
+</head>
+<body>
+
+    <div class="status-badge">
+        <div class="status-dot"></div>
+        System Active
+    </div>
+
+    <div class="sidebar">
+        <!-- New Order Panel -->
+        <div class="panel" style="animation-delay: 0s;">
+            <div class="panel-header">
+                <i class="ph-fill ph-rocket-launch"></i>
+                AI Dispatcher
+            </div>
+            
+            <div class="input-group">
+                <label>Customer Name</label>
+                <input id="customer-name" type="text" placeholder="e.g. Udin">
+            </div>
+
+            <div class="input-group">
+                <label>Issue Description</label>
+                <textarea id="description" placeholder="e.g. AC rusak..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label>Location</label>
+                <div id="location-box" class="location-info" style="color: var(--text-muted); background: rgba(255,255,255,0.05); border-color: transparent;">
+                    <i class="ph ph-map-pin"></i>
+                    <span id="selected-coords">Click on map to set location</span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Routing Algorithm</label>
+                <select id="algorithm">
+                    <option value="astar">A* Algorithm (Recommended)</option>
+                    <option value="dijkstra">Dijkstra Algorithm</option>
+                </select>
+            </div>
+
+            <button id="dispatch-btn" type="button" class="btn-primary" onclick="submitDispatch()">
+                <i class="ph-bold ph-paper-plane-tilt"></i>
+                Dispatch Technician
+            </button>
+            <div id="dispatch-error" style="color: #ef4444; font-size: 0.85rem; display: none; margin-top: 8px;"></div>
+        </div>
+
+        <!-- Result Panel (Hidden by default) -->
+        <div id="result-panel" class="panel" style="display: none; animation-delay: 0.1s;">
+            <div class="panel-header" style="color: var(--success);">
+                <i class="ph-fill ph-check-circle" style="color: var(--success);"></i>
+                Technician Dispatched
+            </div>
+            <div id="result-content"></div>
+        </div>
+
+        <!-- Technicians Panel -->
+        <div class="panel" style="animation-delay: 0.2s;">
+            <div class="panel-header">
+                <i class="ph-fill ph-users"></i>
+                Active Technicians
+            </div>
+            <div id="technician-list" class="tech-list">
+                <div style="color: var(--text-muted); font-size: 0.9rem; padding: 10px 0;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <main id="map"></main>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000/api";
+        let map, customerMarker, routeLayer;
+        let customerLatLng = null;
+        let technicianMarkers = [];
+        let currentOrderId = null;
+
+        // Init Map
+        map = L.map('map', { zoomControl: false }).setView([-3.7928, 102.2608], 13);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Custom Icons
+        const createIcon = (type) => {
+            const iconClass = type === 'customer' ? 'marker-customer ph-fill ph-user' : 
+                              type === 'tech' ? 'marker-tech ph-fill ph-wrench' : 
+                              'marker-selected ph-fill ph-star';
+            return L.divIcon({
+                html: `<div class="custom-marker"><i class="${iconClass}"></i></div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16],
+                className: ''
+            });
+        };
+
+        const customerIcon = createIcon('customer');
+        const techIcon = createIcon('tech');
+        const selectedTechIcon = createIcon('selected');
+
+        // Map Click
+        map.on('click', (e) => {
+            customerLatLng = e.latlng;
+            const locBox = document.getElementById('location-box');
+            locBox.style.background = 'rgba(16, 185, 129, 0.1)';
+            locBox.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+            locBox.style.color = 'var(--success)';
+            
+            document.getElementById('selected-coords').innerHTML = 
+                `<b>Lat:</b> ${e.latlng.lat.toFixed(5)}, <b>Lng:</b> ${e.latlng.lng.toFixed(5)}`;
+            
+            if (customerMarker) map.removeLayer(customerMarker);
+            customerMarker = L.marker(e.latlng, { icon: customerIcon, zIndexOffset: 1000 })
+                .addTo(map)
+                .bindPopup('<b style="font-size:14px;">📍 Customer Location</b><br>Pending Order')
+                .openPopup();
+        });
+
+        // Load Technicians
+        async function loadTechnicians() {
+            try {
+                const res = await fetch(`${API_BASE}/technicians/active`);
+                const data = await res.json();
+                
+                const list = document.getElementById('technician-list');
+                list.innerHTML = '';
+                
+                technicianMarkers.forEach(m => map.removeLayer(m));
+                technicianMarkers = [];
+
+                if (!res.ok) throw new Error(data.detail || 'Failed to load technicians');
+                
+                if (!data.data || data.data.length === 0) {
+                    list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">No active technicians available.</div>';
+                    return;
+                }
+
+                data.data.forEach(tech => {
+                    const initials = tech.name.substring(0, 2).toUpperCase();
+                    list.innerHTML += `
+                        <div class="tech-item">
+                            <div class="tech-avatar">${initials}</div>
+                            <div class="tech-details">
+                                <div class="tech-name">${tech.name}</div>
+                                <div class="tech-area">${tech.location.area || 'Bengkulu'}</div>
+                            </div>
+                            <div class="tech-status"></div>
+                        </div>
+                    `;
+                    
+                    const m = L.marker([tech.location.latitude, tech.location.longitude], { icon: techIcon })
+                        .addTo(map)
+                        .bindPopup(`<b style="font-size:14px; color: var(--success);"><i class="ph-fill ph-wrench"></i> ${tech.name}</b><br><span style="color: var(--text-muted)">${tech.skill || 'General'}</span>`);
+                    
+                    m.techData = tech;
+                    technicianMarkers.push(m);
+                });
+            } catch (e) {
+                console.error(e);
+                document.getElementById('technician-list').innerHTML = 
+                    `<div style="color: #ef4444; font-size: 0.9rem;"><i class="ph ph-warning-circle"></i> ${e.message}</div>`;
+            }
+        }
+
+        // Create Dummy
+        async function createDummy() {
+            const btn = document.getElementById('dummy-btn');
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Generating...';
+            try {
+                await fetch(`${API_BASE}/technicians/dummy`, {method: 'POST'});
+                await loadTechnicians();
+            } catch (e) {
+                alert('Failed to create dummy data: ' + e.message);
+            } finally {
+                btn.innerHTML = '<i class="ph ph-database"></i> Generate Dummy Data';
+            }
+        }
+
+        setTimeout(() => {
+            const btn = document.createElement('button');
+            btn.id = 'dummy-btn';
+            btn.innerHTML = '<i class="ph ph-database"></i> Generate Dummy Data';
+            btn.className = 'btn-dummy';
+            btn.onclick = createDummy;
+            document.body.appendChild(btn);
+            loadTechnicians();
+        }, 500);
+
+        // Submit Dispatch
+        async function submitDispatch() {
+            const errorDiv = document.getElementById('dispatch-error');
+            errorDiv.style.display = 'none';
+
+            if (!customerLatLng) {
+                errorDiv.textContent = "Please click on the map to set a customer location.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('dispatch-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Calculating Route...';
+            btn.disabled = true;
+
+            try {
+                const orderRes = await fetch(`${API_BASE}/orders/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customer_name: document.getElementById('customer-name').value || "Guest",
+                        customer_phone: "-",
+                        customer_lat: customerLatLng.lat,
+                        customer_lon: customerLatLng.lng,
+                        description: document.getElementById('description').value || "-"
+                    })
+                });
+                const orderData = await orderRes.json();
+                if (!orderRes.ok) throw new Error(orderData.detail || "Failed to create order");
+                
+                currentOrderId = orderData.data.order_id;
+
+                const alg = document.getElementById('algorithm').value;
+                const dispatchRes = await fetch(`${API_BASE}/dispatch/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: currentOrderId, algorithm: alg })
+                });
+                const dispatchData = await dispatchRes.json();
+                
+                if (!dispatchRes.ok) throw new Error(dispatchData.detail || "Dispatch routing failed");
+
+                renderResult(dispatchData);
+                
+            } catch(e) {
+                errorDiv.textContent = `Error: ${e.message}`;
+                errorDiv.style.display = 'block';
+                console.error(e);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Render Result
+        function renderResult(data) {
+            if (routeLayer) map.removeLayer(routeLayer);
+
+            routeLayer = L.polyline(data.polyline, { 
+                color: '#3b82f6', 
+                weight: 6, 
+                opacity: 0.8,
+                lineCap: 'round',
+                lineJoin: 'round',
+                dashArray: '10, 15',
+                dashOffset: '0'
+            }).addTo(map);
+
+            let dashOffset = 0;
+            const animateRoute = () => {
+                dashOffset -= 1;
+                if(routeLayer) routeLayer.setStyle({ dashOffset });
+                requestAnimationFrame(animateRoute);
+            };
+            animateRoute();
+
+            map.fitBounds(routeLayer.getBounds(), { padding: [80, 80] });
+
+            const selectedTech = data.selected_technician;
+            technicianMarkers.forEach(m => {
+                if (m.techData && m.techData.id === selectedTech.id) {
+                    m.setIcon(selectedTechIcon);
+                    m.setZIndexOffset(2000);
+                    m.bindPopup(`<b style="font-size:14px; color: var(--primary);">⭐ Selected: ${selectedTech.name}</b><br>On the way!`).openPopup();
+                } else {
+                    m.setIcon(techIcon);
+                    m.setZIndexOffset(0);
+                }
+            });
+
+            const panel = document.getElementById('result-panel');
+            const content = document.getElementById('result-content');
+            
+            panel.style.display = 'flex';
+            
+            const t = data.selected_technician;
+            const distanceKm = (t.distance_meters / 1000).toFixed(2);
+            
+            let routesHTML = data.all_routes.map(r => {
+                const isSelected = r.technician_id === t.id;
+                return `
+                    <div class="route-item ${isSelected ? 'selected' : ''}">
+                        <span>${isSelected ? '<i class="ph-fill ph-check-circle"></i>' : ''} ${r.name}</span>
+                        <span>${(r.distance_meters/1000).toFixed(2)} km</span>
+                    </div>
+                `;
+            }).join('');
+
+            content.innerHTML = `
+                <div class="result-card">
+                    <div class="result-hero">
+                        <div class="result-avatar">
+                            <i class="ph-fill ph-user-check" style="color: #fff;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.2rem; font-weight: 700;">${t.name}</div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem;">En route to destination</div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-stats">
+                        <div class="stat-box">
+                            <span class="stat-label">DISTANCE</span>
+                            <span class="stat-label" style="color: #60a5fa;"><i class="ph ph-ruler"></i> ${distanceKm} km</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">EST. TIME</span>
+                            <span class="stat-label" style="color: #60a5fa;"><i class="ph ph-clock"></i> ${t.eta_minutes} min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                    COMPARISON
+                </div>
+                <div class="route-list">
+                    ${routesHTML}
+                </div>
+            `;
+            
+            document.querySelector('.sidebar').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
