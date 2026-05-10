@@ -22,7 +22,7 @@ class AlgorithmService:
             path = nx.astar_path(
                 G, source_node, target_node,
                 heuristic=heuristic,
-                weight='travel_time'
+                weight='length'
             )
             distance = sum(
                 G[u][v][0].get('length', 0)  # type: ignore
