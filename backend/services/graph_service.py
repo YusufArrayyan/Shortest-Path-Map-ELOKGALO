@@ -4,8 +4,15 @@ import pickle
 import os
 import threading
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-GRAPH_CACHE = os.path.join(BASE_DIR, "bengkulu_graph.pkl")
+# Di Render (production), /tmp adalah satu-satunya direktori yang writable
+# Di lokal, simpan di root repo (satu level di atas backend/)
+IS_PRODUCTION = os.environ.get("RENDER", False)
+
+if IS_PRODUCTION:
+    GRAPH_CACHE = "/tmp/bengkulu_graph.pkl"
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    GRAPH_CACHE = os.path.join(BASE_DIR, "bengkulu_graph.pkl")
 
 class GraphService:
     _graph = None
@@ -20,15 +27,17 @@ class GraphService:
                         cls._graph = pickle.load(f)
                     print("Graf dimuat dari cache.")
                 else:
-                    print("Mengunduh graf dari OpenStreetMap...")
-                    # Download smaller area around Bengkulu for faster testing (5km radius)
+                    print("Mengunduh graf dari OpenStreetMap... (mungkin butuh ~60 detik)")
                     G = ox.graph_from_point((-3.7928, 102.2608), dist=5000, network_type="drive")
                     G = ox.add_edge_speeds(G)
                     G = ox.add_edge_travel_times(G)
                     cls._graph = G
-                    with open(GRAPH_CACHE, "wb") as f:
-                        pickle.dump(G, f)
-                    print("Graf berhasil disimpan ke cache.")
+                    try:
+                        with open(GRAPH_CACHE, "wb") as f:
+                            pickle.dump(G, f)
+                        print("Graf berhasil disimpan ke cache.")
+                    except Exception as e:
+                        print(f"Warning: Tidak bisa menyimpan cache: {e}")
         return cls._graph
 
     @classmethod
@@ -49,14 +58,12 @@ class GraphService:
             edge_data = G[u][v][0]
             
             if 'geometry' in edge_data:
-                # edge_data['geometry'].coords is a sequence of (lon, lat)
                 for lon, lat in list(edge_data['geometry'].coords)[:-1]:
                     coords.append([lat, lon])
             else:
                 u_data = G.nodes[u]
                 coords.append([u_data['y'], u_data['x']])
                 
-        # Tambahkan node terakhir dari path
         last_node = path[-1]
         last_data = G.nodes[last_node]
         coords.append([last_data['y'], last_data['x']])

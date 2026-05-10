@@ -1,5 +1,7 @@
 import sys
 import os
+
+# Tambahkan backend/ ke path agar import relatif berfungsi
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI
@@ -12,9 +14,19 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Dispatcher System", version="1.0.0")
 
+# CORS — izinkan GitHub Pages dan localhost untuk development
+ALLOWED_ORIGINS = [
+    "https://yusufarray.github.io",
+    "http://localhost:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:8080",
+    # Tambahkan origin lain di sini jika perlu
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,4 +38,8 @@ app.include_router(dispatch.router, prefix="/api/dispatch", tags=["Dispatch"])
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to AI Dispatcher API"}
+    return {"message": "AI Dispatcher API is running!"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
