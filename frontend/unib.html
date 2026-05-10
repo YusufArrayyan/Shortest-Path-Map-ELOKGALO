@@ -63,8 +63,53 @@ select option{background:#1e293b}
 .leg-item{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
+/* Navbar Styles */
+.top-navbar {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    height: 60px;
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 2000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+}
+.nav-brand i { color: var(--primary); font-size: 1.4rem; }
+.nav-links { display: flex; gap: 8px; }
+.nav-link {
+    padding: 8px 16px;
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+.nav-link.active { background: var(--primary); color: white; }
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+  .top-navbar { height: 50px; padding: 0 16px; top: 12px; width: 95%; }
+  .nav-brand span { display: none; }
+  .nav-link { padding: 6px 12px; font-size: 0.75rem; }
   body { flex-direction: column; }
   .sidebar {
     top: auto;
@@ -79,19 +124,8 @@ select option{background:#1e293b}
     box-shadow: 0 -8px 20px rgba(0,0,0,0.4);
   }
   .panel { padding: 15px; border-radius: 14px; }
-  .back-btn {
-    top: 12px;
-    right: 12px;
-    padding: 8px 14px;
-    font-size: 0.75rem;
-  }
-  .badge {
-    top: 12px;
-    right: auto;
-    left: 12px;
-    padding: 6px 12px;
-    font-size: 0.75rem;
-  }
+  .back-btn { display: none; }
+  .badge { display: none; }
   .brand-logo { width: 32px; height: 32px; font-size: 1rem; }
   .brand-text h1 { font-size: 0.95rem; }
   .btn { padding: 11px; font-size: 0.85rem; }
@@ -103,8 +137,16 @@ select option{background:#1e293b}
 <body>
 <div id="map"></div>
 
-<a href="index.html" class="back-btn"><i class="ph ph-arrow-left"></i> AI Dispatcher</a>
-<div class="badge"><div class="dot-pulse"></div> UNIB Navigator</div>
+    <nav class="top-navbar">
+        <div class="nav-brand">
+            <i class="ph-fill ph-buildings"></i>
+            <span>UNIB Navigator</span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dispatcher</a>
+            <a href="unib.html" class="nav-link active">🎓 UNIB Nav</a>
+        </div>
+    </nav>
 
 <div class="sidebar">
   <!-- Header -->
