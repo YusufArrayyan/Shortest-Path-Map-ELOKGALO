@@ -16,6 +16,8 @@ app = FastAPI(title="AI Dispatcher System", version="1.0.0")
 
 # CORS — izinkan GitHub Pages dan localhost untuk development
 ALLOWED_ORIGINS = [
+    "https://yusufarrayyan.github.io",
+    "https://yusufarrayyan.github.io/",
     "https://yusufarray.github.io",
     "https://yusufarray.github.io/",
     "http://localhost:3000",
