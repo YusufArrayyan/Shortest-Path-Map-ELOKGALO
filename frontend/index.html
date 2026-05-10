@@ -438,7 +438,8 @@
 
     <main id="map"></main>
 
-    <script        const API_BASE = "http://127.0.0.1:8000/api";
+    <script>
+        const API_BASE = "http://127.0.0.1:8000/api";
         const OSRM_BASE = "https://router.project-osrm.org/route/v1/driving";
         
         let map, customerMarker, routeLayer;
@@ -507,7 +508,13 @@
 
             let data;
             try {
-                const res = await fetch(`${API_BASE}/technicians/active`);
+                // Tambahkan timeout agar tidak loading selamanya jika backend offline
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 detik timeout
+
+                const res = await fetch(`${API_BASE}/technicians/active`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 if (res.ok) {
                     const json = await res.json();
                     data = json.data;
